@@ -12,7 +12,7 @@ Param(
 
 $DateFolderFormat = "yyyy-MM"
 
-echo "Looking in $Path"
+echo "Looking in '$Path'…"
 
 function Get-AbsolutePath ($Path)
 {
@@ -20,22 +20,27 @@ function Get-AbsolutePath ($Path)
     #   1) correctly deals with situations where $Path (the second term) is an absolute path
     #   2) correctly deals with situations where $Path (the second term) is relative
     # (join-path) commandlet does not have this first property
-    $Path = [System.IO.Path]::Combine( ((pwd).Path), ($Path) );
+    $Path = [System.IO.Path]::Combine( ((pwd).Path), ($Path) )
 
     # Normalises any relative path modifiers like '..' and '.'
-    $Path = [System.IO.Path]::GetFullPath($Path);
+    $Path = [System.IO.Path]::GetFullPath($Path)
 
-    return $Path;
+    return $Path
+}
+
+function GetFileDate($File) {
+    # TODO Check EXIF?
+    $_.LastWriteTime
 }
 
 # Returns the directory path that this file should be moved to.
 function TargetLocation($File) {
-    $modified = $_.LastWriteTime
+    $modified = GetFileDate($File)
     $datefolder = Get-Date -Date $modified -Format $DateFolderFormat
     Get-AbsolutePath (Join-Path $Path $datefolder)
 }
 
-function runCommand() {
+function RunCommand() {
     $ItemsToMove.ForEach{
         $Dest = TargetLocation $_
         if (-Not (Test-Path $Dest)) {
@@ -45,15 +50,15 @@ function runCommand() {
     }
 }
 
-function askConfirmation() {
+function AskConfirmation() {
   $confirmation = Read-Host "Are you Sure You Want To Proceed (y/n)"
   if ($confirmation -eq 'y') {
-      runCommand
+      RunCommand
   } elseif ($confirmation -eq 'n') {
-      echo "It's okay to give up."
+      echo "It's okay to give up. 💩"
   } else {
       echo "I'm sorry, I don't understand. Try again."
-      askConfirmation
+      AskConfirmation
   }
 }
 
@@ -62,7 +67,7 @@ $ItemsToMove = $Items | Where-Object { $_.Directory.FullName -ne (TargetLocation
 
 if ($ItemsToMove.Length -gt 0) {
     echo "Found $($Items.Length) files, of which $($ItemsToMove.Length) need moving."
-    askConfirmation
+    AskConfirmation
 } else {
-    echo "No files need moving. I'm done!"
+    echo "No files need moving. I'm done! 😊"
 }
